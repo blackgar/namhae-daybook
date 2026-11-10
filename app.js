@@ -94,7 +94,7 @@
   }
   function titleLink(place, label = place.name, className = 'placeTitle') {
     if (!place.id) return escapeText(label);
-    return '<a href="#place=' + place.id + '" class="' + className + '" data-place="' + place.id + '">' + escapeText(label) + icon('link') + '</a>';
+    return '<a href="#place=' + place.id + '" class="' + className + '" data-place="' + place.id + '" aria-label="' + escapeText(place.name + ' 사진·상세 페이지 열기') + '"><span class="placeName">' + escapeText(label) + '</span><span class="placeLinkHint">사진·상세 보기 ' + icon('arrow') + '</span></a>';
   }
   function photoThumbnail(place, className = '', lazy = true) {
     const photo = place.photos?.[0];

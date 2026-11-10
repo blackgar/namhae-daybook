@@ -92,9 +92,14 @@
       summary.replaceChildren();
       const photo=p.photos?.[0];
       if(photo){const img=el('img');img.referrerPolicy='no-referrer';img.src=photo.file;img.alt=p.name+' · '+photo.caption;img.loading='lazy';summary.append(img);}
-      const text=el('div');text.append(el('strong','',p.name));
+      const text=el('div');
+      if(p.id&&data.onOpen){
+        const detail=el('button','placeTitle');detail.type='button';
+        detail.setAttribute('aria-label',p.name+' 사진·상세 페이지 열기');
+        detail.append(el('strong','placeName',p.name),el('span','placeLinkHint','사진·상세 보기 →'));
+        detail.onclick=()=>data.onOpen(p);text.append(detail);
+      }else{text.append(el('strong','',p.name));}
       if(p.address)text.append(el('p','',p.address));
-      if(p.id&&data.onOpen){const detail=el('button','','사진·상세 보기 ↗');detail.type='button';detail.onclick=()=>data.onOpen(p);text.append(detail);}
       summary.append(text);
       if(move){if(!isLocal(p)&&!wide){wide=true;zoom=1;center=null;}else if(isLocal(p)&&wide){wide=false;zoom=1;center=null;}else if(zoom>1){center=p.xy;}}
       draw();
