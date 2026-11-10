@@ -59,8 +59,8 @@
     const first=itinerary.find(isLocal)||locals[0]||places[0];
     let origin=itinerary.find(p=>!isLocal(p));
     if(!origin&&data.origin&&valid(data.origin))origin=add(data.origin,'start',null);
-    if(!origin)origin=add({name:'대구시청 동인청사',lat:35.8715,lng:128.6012},'start',null);
-    let wide=false,zoom=1,center=null,selected=first,observer;
+    if(!origin)origin=add({name:'서대구IC',lat:35.8779,lng:128.5310306},'start',null);
+    let wide=Boolean(data.wide),zoom=1,center=null,selected=first,observer;
     const wrap=el('div','nm-map'), top=el('div','nm-controls'), region=el('div','nm-modes');
     const localBtn=el('button','','남해 상세'), wideBtn=el('button','','대구 왕복');
     for(const b of [localBtn,wideBtn]) {b.type='button';region.append(b);}
@@ -79,15 +79,23 @@
     const location=el('div','nm-location'), choose=el('select','nm-picker');
     choose.setAttribute('aria-label','지도에서 확인할 장소');
     places.forEach((p,i)=>{const opt=el('option','',(p.number?p.number+'. ':'')+p.name+' · '+types[p.type]);opt.value=String(i);choose.append(opt);});
-    const link=el('a','nm-nav','길찾기 ↗'); link.target='_blank';link.rel='noopener noreferrer';
+    const link=el('a','nm-nav','TMAP ↗');link.setAttribute('title','TMAP이 설치된 휴대폰에서 열기');
     location.append(choose,link);
     const credit=el('div','nm-credit');credit.append(document.createTextNode('지도 자료 '));
     for(const [i,name,href] of [[0,'통계청 행정경계','https://github.com/southkorea/southkorea-maps'],[1,'국토교통부 일반국도','https://www.data.go.kr/data/15122482/fileData.do'],[2,'© OpenStreetMap contributors','https://www.openstreetmap.org/copyright']]){if(i)credit.append(document.createTextNode(' · '));const a=el('a','',name);a.href=href;a.rel='noopener noreferrer';a.target='_blank';credit.append(a);}
-    wrap.append(top,frame,legend,location,credit);container.append(wrap);
+    const summary=el('div','nm-placeSummary'), legLegend=el('div','nm-legs');
+    wrap.append(top,frame,legend,location,summary,legLegend,credit);container.append(wrap);
     function select(p,move=false) {
       selected=p;choose.value=String(places.indexOf(p));
-      link.href='https://map.kakao.com/link/to/'+encodeURIComponent(p.name)+','+p.lat+','+p.lng;
-      link.setAttribute('aria-label',p.name+' 카카오맵 길찾기');
+      link.href=data.navigationUrl ? data.navigationUrl(p) : 'https://map.kakao.com/link/to/'+encodeURIComponent(p.name)+','+p.lat+','+p.lng;
+      link.setAttribute('aria-label',p.name+' TMAP 앱에서 열기');
+      summary.replaceChildren();
+      const photo=p.photos?.[0];
+      if(photo){const img=el('img');img.src=photo.file;img.alt=p.name+' · '+photo.caption;img.loading='lazy';summary.append(img);}
+      const text=el('div');text.append(el('strong','',p.name));
+      if(p.address)text.append(el('p','',p.address));
+      if(p.id&&data.onOpen){const detail=el('button','','사진·상세 보기 ↗');detail.type='button';detail.onclick=()=>data.onOpen(p);text.append(detail);}
+      summary.append(text);
       if(move){if(!isLocal(p)&&!wide){wide=true;zoom=1;center=null;}else if(isLocal(p)&&wide){wide=false;zoom=1;center=null;}else if(zoom>1){center=p.xy;}}
       draw();
     }
@@ -102,9 +110,13 @@
       let ordered=wide?itinerary:itinerary.filter(isLocal);
       if(wide){if(!ordered.length||isLocal(ordered[0]))ordered=[origin,...ordered];if(isLocal(ordered.at(-1)))ordered=[...ordered,origin];}
       const segments=[];
+      const legColors=['#236d9c','#a96831','#806090','#25856a','#4962a2'];
+      legLegend.replaceChildren();
       for(let i=1;i<ordered.length;i++){
         const a=ordered[i-1].xy,b=ordered[i].xy;if(distance(a,b)<.01)continue;
-        const road=roadFor(a,b);segments.push({road:!!road,points:road||[a,b]});
+        const road=roadFor(a,b);const number=wide?i:i+1;
+        segments.push({road:!!road,points:road||[a,b],number,color:legColors[number-1]||legColors[0]});
+        const legLabel=el('span','',number+' · '+ordered[i-1].name+' → '+ordered[i].name);legLabel.style.color=legColors[number-1]||legColors[0];legLegend.append(legLabel);
       }
       let [xmin,ymin,xmax,ymax]=bounds(viewPlaces.map(p=>p.xy).concat(segments.flatMap(s=>s.points)));
       const mid=center||[(xmin+xmax)/2,(ymin+ymax)/2];
@@ -125,7 +137,10 @@
       let real=false,sequence=false;
       for(const s of segments){
         if(s.road)real=true;else sequence=true;
-        features.append(svg('path',{d:drawPath(s.points),class:s.road?'nm-route real':'nm-route seq'}));
+        features.append(svg('path',{d:drawPath(s.points),class:s.road?'nm-route real':'nm-route seq',style:'stroke:'+s.color}));
+        if(s.points.length>1){const mid=Math.floor((s.points.length-1)*.55),a=proj(s.points[mid]),b=proj(s.points[Math.min(mid+1,s.points.length-1)]);
+          const angle=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;
+          features.append(svg('path',{d:'M-6 -4 L1 0 L-6 4',transform:'translate('+b[0]+' '+b[1]+') rotate('+angle+')',fill:'none',stroke:s.color,'stroke-width':2.5,'stroke-linejoin':'round'}));}
       }
       lineNote.textContent=[real?'실선 · 도로 경로':'',sequence?'점선 · 방문 순서':''].filter(Boolean).join(' / ');
       const visible=wide&&zoom<2?[origin,first]:viewPlaces;
