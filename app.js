@@ -114,6 +114,7 @@
       const active = routeKey === key;
       return '<button type="button" class="route" data-route="' + routeKey + '" aria-pressed="' + active + '"><img referrerpolicy="no-referrer" src="' + escapeText(candidate.thumbnail) + '" alt=""><span class="routeText"><small>코스 ' + candidate.letter + '</small><strong>' + escapeText(candidate.short) + '</strong><span class="blurb">' + escapeText(candidate.shortDesc) + '</span></span><span class="circle">' + (active ? icon('check') : '') + '</span></button>';
     }).join('');
+    window.dispatchEvent(new CustomEvent('namhae:coursechange', {detail: key}));
     $('courseNumber').textContent = '코스 ' + route.letter + ' · ' + route.region;
     $('guideTitle').textContent = route.heading;
     $('guideIntro').textContent = route.intro;

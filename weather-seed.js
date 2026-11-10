@@ -1,0 +1,29 @@
+window.namhaeWeatherSeed = {
+ "schema_version": 1,
+ "timezone": "Asia/Seoul",
+ "start_at": "2026-12-01T00:00:00+09:00",
+ "stop_at": "2026-12-06T18:00:00+09:00",
+ "updated_at": null,
+ "last_attempt_at": null,
+ "status": "scheduled",
+ "message": "12월 1일부터 발표된 예보를 확인해 표시합니다.",
+ "locations": {
+  "east": {
+   "name": "삼동면 · 독일마을",
+   "lat": 34.80004746,
+   "lng": 128.03834018,
+   "source_area": "남해군 삼동면",
+   "daily": [],
+   "hourly": []
+  },
+  "west": {
+   "name": "설천면 · 노량항",
+   "lat": 34.941501,
+   "lng": 127.8749885,
+   "source_area": "남해군 설천면",
+   "daily": [],
+   "hourly": []
+  }
+ },
+ "sources": []
+};
