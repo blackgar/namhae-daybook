@@ -91,7 +91,7 @@
       link.setAttribute('aria-label',p.name+' TMAP 앱에서 열기');
       summary.replaceChildren();
       const photo=p.photos?.[0];
-      if(photo){const img=el('img');img.src=photo.file;img.alt=p.name+' · '+photo.caption;img.loading='lazy';summary.append(img);}
+      if(photo){const img=el('img');img.referrerPolicy='no-referrer';img.src=photo.file;img.alt=p.name+' · '+photo.caption;img.loading='lazy';summary.append(img);}
       const text=el('div');text.append(el('strong','',p.name));
       if(p.address)text.append(el('p','',p.address));
       if(p.id&&data.onOpen){const detail=el('button','','사진·상세 보기 ↗');detail.type='button';detail.onclick=()=>data.onOpen(p);text.append(detail);}

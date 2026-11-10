@@ -99,7 +99,7 @@
   function photoThumbnail(place, className = '', lazy = true) {
     const photo = place.photos?.[0];
     if (!photo) return '';
-    return '<img class="' + className + '" src="' + escapeText(photo.file) + '" alt="' + escapeText(place.name + ' · ' + photo.caption) + '" ' + (lazy ? 'loading="lazy"' : '') + '>';
+    return '<img referrerpolicy="no-referrer" class="' + className + '" src="' + escapeText(photo.file) + '" alt="' + escapeText(place.name + ' · ' + photo.caption) + '" ' + (lazy ? 'loading="lazy"' : '') + '>';
   }
   function addressBlock(place, compact = false) {
     return '<div class="addressBlock' + (compact ? ' compact' : '') + '"><p>' + icon('pin') + '<span>' + escapeText(place.address) + '</span></p><div class="addressActions"><button type="button" data-copy="' + escapeText(place.id || 'origin') + '">주소 복사</button>' + '<a href="' + escapeText(tmapUrl(place)) + '" class="tmap" title="TMAP이 설치된 휴대폰에서 열기">TMAP</a>' + externalLink(navigationUrl(place), '카카오맵', 'maplink') + '</div></div>';
@@ -112,7 +112,7 @@
     $('routes').innerHTML = routeKeys.map(routeKey => {
       const candidate = routes[routeKey];
       const active = routeKey === key;
-      return '<button type="button" class="route" data-route="' + routeKey + '" aria-pressed="' + active + '"><img src="' + escapeText(candidate.thumbnail) + '" alt=""><span class="routeText"><small>코스 ' + candidate.letter + '</small><strong>' + escapeText(candidate.short) + '</strong><span class="blurb">' + escapeText(candidate.shortDesc) + '</span></span><span class="circle">' + (active ? icon('check') : '') + '</span></button>';
+      return '<button type="button" class="route" data-route="' + routeKey + '" aria-pressed="' + active + '"><img referrerpolicy="no-referrer" src="' + escapeText(candidate.thumbnail) + '" alt=""><span class="routeText"><small>코스 ' + candidate.letter + '</small><strong>' + escapeText(candidate.short) + '</strong><span class="blurb">' + escapeText(candidate.shortDesc) + '</span></span><span class="circle">' + (active ? icon('check') : '') + '</span></button>';
     }).join('');
     $('courseNumber').textContent = '코스 ' + route.letter + ' · ' + route.region;
     $('guideTitle').textContent = route.heading;
@@ -152,7 +152,7 @@
   function choices(route, itinerary, type) {
     return '<p class="placeLead">장소 이름을 누르면 외관·실내·음식·메뉴판 사진을 볼 수 있어요.</p><div class="places ' + (type === 'cafes' ? 'cafeGrid' : '') + '">' + route[type].map(place => {
       const photos = place.photos?.slice(0, 2) || [];
-      const pair = '<div class="photopair">' + photos.map((photo, index) => '<button class="photofig" data-open-photo="' + place.id + ',' + index + '" aria-label="' + escapeText(place.name + ' ' + photo.caption) + ' 사진 크게 보기"><img src="' + escapeText(photo.file) + '" loading="lazy" alt="' + escapeText(photo.caption) + '"><span>' + escapeText(photo.caption) + '</span></button>').join('') + '</div>';
+      const pair = '<div class="photopair">' + photos.map((photo, index) => '<button class="photofig" data-open-photo="' + place.id + ',' + index + '" aria-label="' + escapeText(place.name + ' ' + photo.caption) + ' 사진 크게 보기"><img referrerpolicy="no-referrer" src="' + escapeText(photo.file) + '" loading="lazy" alt="' + escapeText(photo.caption) + '"><span>' + escapeText(photo.caption) + '</span></button>').join('') + '</div>';
       return '<article class="surface place">' + pair + '<div><span class="tag">' + icon(type === 'restaurants' ? 'food' : 'cup') + (type === 'restaurants' ? '점심 후보 ' : '전망 카페 ') + (place.index + 1) + '</span><h3>' + titleLink(place) + '</h3><p class="placemenu">' + escapeText(place.menu) + '</p><p class="placedesc">' + escapeText(place.desc) + '</p>' + addressBlock(place) + '<div class="cardbuttons">' + selectionButton(place) + '<button class="action" data-place="' + place.id + '">사진·메뉴 상세 ' + icon('arrow') + '</button></div></div></article>';
     }).join('') + '</div>';
   }
@@ -161,7 +161,7 @@
     const present = categories.filter(([category]) => photos.some(photo => photo.category === category));
     const filters = [['all', '전체'], ...present];
     const shown = galleryFilter === 'all' ? present : present.filter(([category]) => category === galleryFilter);
-    return '<nav class="galleryFilters" aria-label="사진 종류">' + filters.map(([category, label]) => '<button data-gallery-filter="' + category + '" aria-pressed="' + (category === galleryFilter) + '">' + label + '<small>' + (category === 'all' ? photos.length : photos.filter(photo => photo.category === category).length) + '</small></button>').join('') + '</nav>' + shown.map(([category, label]) => '<section class="gallerySection"><div class="subhead"><h3>' + label + '</h3><span>' + photos.filter(photo => photo.category === category).length + '장</span></div><div class="galleryGrid ' + (category === 'menu' ? 'menuGallery' : '') + '">' + photos.map((photo, index) => photo.category !== category ? '' : '<figure><button data-open-photo="' + place.id + ',' + index + '" aria-label="' + escapeText(photo.caption) + ' 사진 크게 보기"><img src="' + escapeText(photo.file) + '" loading="lazy" alt="' + escapeText(place.name + ' · ' + photo.caption) + '"><span>확대 ' + icon('link') + '</span></button><figcaption>' + escapeText(photo.caption) + '</figcaption>' + externalLink(photo.source || place.source, escapeText(photoCredit(photo)) + ' ↗') + '</figure>').join('') + '</div></section>').join('');
+    return '<nav class="galleryFilters" aria-label="사진 종류">' + filters.map(([category, label]) => '<button data-gallery-filter="' + category + '" aria-pressed="' + (category === galleryFilter) + '">' + label + '<small>' + (category === 'all' ? photos.length : photos.filter(photo => photo.category === category).length) + '</small></button>').join('') + '</nav>' + shown.map(([category, label]) => '<section class="gallerySection"><div class="subhead"><h3>' + label + '</h3><span>' + photos.filter(photo => photo.category === category).length + '장</span></div><div class="galleryGrid ' + (category === 'menu' ? 'menuGallery' : '') + '">' + photos.map((photo, index) => photo.category !== category ? '' : '<figure><button data-open-photo="' + place.id + ',' + index + '" aria-label="' + escapeText(photo.caption) + ' 사진 크게 보기"><img referrerpolicy="no-referrer" src="' + escapeText(photo.file) + '" loading="lazy" alt="' + escapeText(place.name + ' · ' + photo.caption) + '"><span>확대 ' + icon('link') + '</span></button><figcaption>' + escapeText(photo.caption) + '</figcaption>' + externalLink(photo.source || place.source, escapeText(photoCredit(photo)) + ' ↗') + '</figure>').join('') + '</div></section>').join('');
   }
   function drawDetail() {
     const place = places.get(detailId);
