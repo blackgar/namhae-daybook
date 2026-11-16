@@ -4,6 +4,7 @@
   const NS = 'http://www.w3.org/2000/svg';
   const base = window.travelMapBase;
   if (!base) return;
+  base.towns = [["사남면",128.075,35.058],["용현면",128.062,35.012],["사천읍",128.09,35.082],["삼천포",128.074,34.944],["삼천포대교",128.045,34.923]];
   const bounds = points => points.reduce((a,p) => [Math.min(a[0],p[0]),Math.min(a[1],p[1]),Math.max(a[2],p[0]),Math.max(a[3],p[1])], [Infinity,Infinity,-Infinity,-Infinity]);
   const pack = lines => lines.map(points => ({points, box:bounds(points)}));
   const land = pack(base.land);
@@ -62,11 +63,11 @@
     if(!origin)origin=add({name:'서대구IC',lat:35.8779,lng:128.5310306},'start',null);
     let wide=Boolean(data.wide),zoom=1,center=null,selected=first,observer;
     const wrap=el('div','nm-map'), top=el('div','nm-controls'), region=el('div','nm-modes');
-    const localBtn=el('button','','남해 상세'), wideBtn=el('button','','대구 왕복');
+    const localBtn=el('button','','사천 상세'), wideBtn=el('button','','대구 왕복');
     for(const b of [localBtn,wideBtn]) {b.type='button';region.append(b);}
     top.append(region);
     const frame=el('div','nm-frame');
-    const geo=svg('svg',{role:'group','aria-label':'남해 여행 일정 지도'});
+    const geo=svg('svg',{role:'group','aria-label':'사천 여행 일정 지도'});
     const zpanel=el('div','nm-zoom');
     for(const [label,sign] of [['확대',1],['축소',-1]]) {
       const btn=el('button','',sign===1?'+':'−'); btn.type='button';btn.setAttribute('aria-label','지도 '+label);
@@ -137,7 +138,7 @@
       const features=svg('g',{'aria-hidden':'true'});geo.append(features);
       features.append(svg('path',{d:land.filter(o=>overlaps(o.box,box)).map(o=>drawPath(o.points,true)).join(''),class:'nm-land'}));
       if(!wide)features.append(svg('path',{d:roads.filter(o=>overlaps(o.box,box)).map(o=>drawPath(o.points)).join(''),class:'nm-roads'}));
-      const labels=wide?[['진주시',128.08,35.18],['합천군',128.15,35.56],['창원시',128.64,35.23],['남해',127.95,34.69]]:base.towns;
+      const labels=wide?[['진주시',128.08,35.18],['합천군',128.15,35.56],['창원시',128.64,35.23],['사천시',128.06,35.04]]:base.towns;
       for(const [text,x,y] of labels){let [xx,yy]=proj([x,y]);if(xx<24||xx>w-24||yy<20||yy>h-13)continue;features.append(svg('text',{x:xx,y:yy,class:'nm-town','text-anchor':'middle'},text));}
       let real=false,sequence=false;
       for(const s of segments){
@@ -165,13 +166,13 @@
       spots.sort((a,b)=>Number(a.p===selected)-Number(b.p===selected)).forEach(({p,px,py})=>{
         const group=svg('g',{transform:'translate('+px.toFixed(2)+' '+py.toFixed(2)+')',class:'nm-pin',role:'button',tabindex:0,'aria-label':p.name+' '+types[p.type],'aria-pressed':p===selected});
         const mini=wide&&zoom<2;
-        group.append(svg('title',{},mini&&isLocal(p)?'남해 일정 상세 보기':p.name));
+        group.append(svg('title',{},mini&&isLocal(p)?'사천 일정 상세 보기':p.name));
         group.append(svg('circle',{r:16,fill:'transparent'}));
         if(p===selected)group.append(svg('circle',{r:15.7,fill:'none',stroke:cols[p.type],'stroke-width':1.6}));
         group.append(svg('circle',{r:12.7,fill:cols[p.type],stroke:'#fff','stroke-width':2}));
         const symbol=mini?(isLocal(p)?'남':'대'):(p.number||({food:'식',cafe:'차',sight:'●',start:'대'}[p.type]));
         group.append(svg('text',{x:0,y:4.4,'text-anchor':'middle',class:'nm-pintext'},symbol));
-        if(mini){let tx=px>w*.64?-18:18; group.append(svg('text',{x:tx,y:4,'text-anchor':tx<0?'end':'start',class:'nm-rlabel'},isLocal(p)?'남해':'대구'));}
+        if(mini){let tx=px>w*.64?-18:18; group.append(svg('text',{x:tx,y:4,'text-anchor':tx<0?'end':'start',class:'nm-rlabel'},isLocal(p)?'사천':'대구'));}
         const hit=()=>{if(mini&&isLocal(p)){wide=false;zoom=1;center=null;}select(p);};
         group.addEventListener('click',hit);group.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();hit();choose.focus();}});
         geo.append(group);

@@ -76,13 +76,14 @@
   function plan(route) {
     const food = route.restaurants[selections[key].restaurants];
     const cafe = route.cafes[selections[key].cafes];
-    const visits = [route.matrix.places[0], route.stops[0], food, cafe, route.stops[1], route.matrix.places[0]];
+    const visits = [guide.origin, guide.anchor, route.stops[0], food, cafe, route.stops[1], guide.anchor, guide.origin];
     const legs = visits.slice(1).map((place, index) => leg(visits[index], place, route));
     const starts = [480];
-    const stays = [0, 35, 60, 60, 25];
-    for (let index = 0; index < 5; index++) {
-      const allowance = index === 0 || index === 4 ? 30 : 8;
-      starts.push(roundFive(starts[index] + stays[index] + legs[index].minutes + allowance));
+    const stays = [0, 10, route.sightMinutes?.[0] || 35, 60, 60, route.sightMinutes?.[1] || 25, 10, 0];
+    for (let index = 0; index < visits.length - 1; index++) {
+      const allowance = index === 0 || index === visits.length - 2 ? 30 : 8;
+      const arrival = roundFive(starts[index] + stays[index] + legs[index].minutes + allowance);
+      starts.push(index === 2 ? Math.max(690, arrival) : arrival);
     }
     return {visits, legs, starts, stays, food, cafe};
   }
@@ -102,7 +103,7 @@
     return '<img referrerpolicy="no-referrer" class="' + className + '" src="' + escapeText(photo.file) + '" alt="' + escapeText(place.name + ' · ' + photo.caption) + '" ' + (lazy ? 'loading="lazy"' : '') + '>';
   }
   function addressBlock(place, compact = false) {
-    return '<div class="addressBlock' + (compact ? ' compact' : '') + '"><p>' + icon('pin') + '<span>' + escapeText(place.address) + '</span></p><div class="addressActions"><button type="button" data-copy="' + escapeText(place.id || 'origin') + '">주소 복사</button>' + '<a href="' + escapeText(tmapUrl(place)) + '" class="tmap" title="TMAP이 설치된 휴대폰에서 열기">TMAP</a>' + externalLink(navigationUrl(place), '카카오맵', 'maplink') + '</div></div>';
+    return '<div class="addressBlock' + (compact ? ' compact' : '') + '"><p>' + icon('pin') + '<span>' + escapeText(place.address) + '</span></p><div class="addressActions"><button type="button" data-copy="' + escapeText(place.id || (place === guide.anchor ? 'anchor' : 'origin')) + '">주소 복사</button>' + '<a href="' + escapeText(tmapUrl(place)) + '" class="tmap" title="TMAP이 설치된 휴대폰에서 열기">TMAP</a>' + externalLink(navigationUrl(place), '카카오맵', 'maplink') + '</div></div>';
   }
   function selectionButton(place) {
     const selected = selections[key][place.type] === place.index;
@@ -135,20 +136,20 @@
   function mapSequence(itinerary, compact) {
     return '<div class="routeSequence ' + (compact ? 'sequenceCompact' : '') + '"><h3>사진으로 보는 방문 순서</h3>' + itinerary.visits.map((place, index) => {
       const photo = photoThumbnail(place);
-      const name = index === 0 ? '서대구 IC 출발' : index === 5 ? '서대구 IC 복귀' : place.name;
-      return '<article class="routeStep"><span class="stepIndex">' + index + '</span>' + (photo ? '<button class="stepPhoto" data-place="' + place.id + '" aria-label="' + escapeText(place.name) + ' 사진·상세">' + photo + '</button>' : '<span class="stepOrigin">' + icon('car') + '</span>') + '<div><time>' + hour(itinerary.starts[index]) + '</time><h4>' + titleLink(place, name) + '</h4><p>' + escapeText(place.address) + '</p></div></article>' + (index < 5 ? '<div class="stepLeg">' + icon('arrow') + '<span>' + roadText(itinerary.legs[index]) + '</span></div>' : '');
+      const name = index === 0 ? '서대구 IC 출발' : index === itinerary.visits.length - 1 ? '서대구 IC 복귀' : place.name;
+      return '<article class="routeStep"><span class="stepIndex">' + index + '</span>' + (photo ? '<button class="stepPhoto" data-place="' + place.id + '" aria-label="' + escapeText(place.name) + ' 사진·상세">' + photo + '</button>' : '<span class="stepOrigin">' + icon('car') + '</span>') + '<div><time>' + hour(itinerary.starts[index]) + '</time><h4>' + titleLink(place, name) + '</h4><p>' + escapeText(place.address) + '</p></div></article>' + (index < itinerary.visits.length - 1 ? '<div class="stepLeg">' + icon('arrow') + '<span>' + roadText(itinerary.legs[index]) + '</span></div>' : '');
     }).join('') + '</div>';
   }
   function schedule(route, itinerary) {
     const rows = itinerary.visits.map((place, index) => {
-      const type = index === 2 ? 'restaurants' : index === 3 ? 'cafes' : '';
-      const label = index === 0 ? '서대구 IC 출발' : index === 5 ? '서대구 IC 도착 예상' : index === 2 ? '점심' : index === 3 ? '카페' : place.name;
-      const description = ['고속도로 진입 전 서대구 IC에서 08:00 출발하는 기준이에요.', route.stops[0].desc, '식사 시간 60분. 아래 세 곳 중 한 곳을 고르세요.', '따뜻한 실내에서 60분 쉬어 가세요. 아래 두 곳 중 한 곳을 고르세요.', route.stops[1].desc, '서대구 IC 복귀 예상 시각이에요.'][index];
+      const type = index === 3 ? 'restaurants' : index === 4 ? 'cafes' : '';
+      const label = index === 0 ? '서대구 IC 출발' : index === itinerary.visits.length - 1 ? '서대구 IC 도착 예상' : index === 3 ? '점심' : index === 4 ? '카페' : index === 1 ? '사남면 기준점 · 합류' : index === 6 ? '사남면 기준점 · 복귀' : place.name;
+      const description = ['서대구 IC 08:00 출발 기준입니다.', '사남면 월성1길 89에서 합류한 뒤 사천 여행을 시작해요. 정차 10분을 반영했습니다.', route.stops[0].desc, '식사 시간 60분, 11:30 이후 기준입니다. 아래 세 곳 중 한 곳을 고르세요.', '실내에서 60분 쉬어 가세요. 아래 두 곳 중 한 곳을 고르세요.', route.stops[1].desc, '같은 기준점에 돌아와 10분 쉬었다가 대구로 출발합니다.', '서대구 IC 복귀 예상입니다. 실시간 교통에 따라 달라집니다.'][index];
       const content = type ? scheduleCandidates(route, itinerary, type) : addressBlock(place, true);
-      const move = index < 5 ? '<div class="move">' + icon('car') + '<span>' + (index === 4 ? hour(itinerary.starts[index] + itinerary.stays[index]) + ' 남해 출발 · ' : '') + roadText(itinerary.legs[index]) + '</span></div>' : '';
+      const move = index < itinerary.visits.length - 1 ? '<div class="move">' + icon('car') + '<span>' + (index === itinerary.visits.length - 2 ? hour(itinerary.starts[index] + itinerary.stays[index]) + ' 사천 출발 · ' : '') + roadText(itinerary.legs[index]) + '</span></div>' : '';
       return '<li><time>' + hour(itinerary.starts[index]) + '</time><span class="dot"></span><div class="stoprow"><div class="timelineTitle">' + (type ? label : titleLink(place, label)) + '</div><p>' + escapeText(description) + '</p>' + content + move + '</div></li>';
     }).join('');
-    return '<div class="schedGrid upgraded"><section class="surface"><div class="subhead"><h3>하루 일정</h3><span>08:00 – ' + hour(itinerary.starts[5]) + '</span></div><ol class="timeline">' + rows + '</ol><div class="note">' + escapeText(route.tip) + ' 주말 정체가 있으면 마지막 산책을 줄이고 출발하세요.</div></section><div>' + mapShell('선택한 일정의 동선', itinerary, true) + '</div></div>';
+    return '<div class="schedGrid upgraded"><section class="surface"><div class="subhead"><h3>하루 일정</h3><span>08:00 – ' + hour(itinerary.starts.at(-1)) + '</span></div><ol class="timeline">' + rows + '</ol><div class="note">' + escapeText(route.tip) + ' 주말 정체가 있으면 마지막 산책을 줄이고 출발하세요.</div></section><div>' + mapShell('선택한 일정의 동선', itinerary, true) + '</div></div>';
   }
   function choices(route, itinerary, type) {
     return '<p class="placeLead">장소 이름을 누르면 외관·실내·음식·메뉴판 사진을 볼 수 있어요.</p><div class="places ' + (type === 'cafes' ? 'cafeGrid' : '') + '">' + route[type].map(place => {
@@ -172,7 +173,7 @@
     $('placePage').innerHTML = '<button class="backButton" data-back>' + icon('arrow') + '일정으로 돌아가기</button><div class="detailHeading"><span class="overline">코스 ' + routes[place.routeKey].letter + ' · ' + (isSight ? '관광지' : place.type === 'restaurants' ? '점심 식당' : '카페') + '</span><h1>' + escapeText(place.name) + '</h1><p>' + escapeText(place.desc) + '</p></div><div class="detailOverview"><div><h2>' + (isSight ? '방문 안내' : '추천 메뉴와 방문 안내') + '</h2>' + (place.menu ? '<p class="placemenu">' + escapeText(place.menu) + '</p>' + (place.menuNote ? '<p class="menuNote">' + escapeText(place.menuNote) + '</p>' : '') : '') + addressBlock(place) + (details.length ? '<p class="detailHours">' + escapeText(details.join(' · ')) + '</p>' : '') + '<div class="cardbuttons">' + (!isSight ? selectionButton(place) : '') + externalLink(place.source, '장소 안내 원문 ↗') + '</div></div><div class="detailPhotoLead">' + photoThumbnail(place, '', false) + '</div></div><div class="galleryIntro"><h2>' + (isSight ? '천천히 둘러볼 풍경' : '사진으로 미리 둘러보기') + '</h2><p>' + (isSight ? '전경과 산책 동선을 사진으로 확인해 보세요.' : '메뉴판은 촬영 당시 정보예요. 주문 전 매장에서 가격과 구성을 확인하세요.') + '</p>' + (missing.length ? '<p class="missingPhotos">' + escapeText(missing.join('·')) + ' 사진은 확인한 원문 자료가 부족합니다. 장소 안내 원문에서 최신 사진을 확인해 주세요.</p>' : '') + '</div><p class="galleryNotes">' + escapeText(place.galleryNotes || '') + '</p><div id="placeGallery">' + galleryContent(place) + '</div>';
   }
   function references(route) {
-    $('sources').innerHTML = '<p>대구 출발·복귀 기준점은 서대구 IC입니다. 주행시간은 OpenStreetMap 도로망을 이용한 OSRM 자동차 경로 추정값이며 실시간 교통은 반영하지 않습니다. 왕복 장거리 구간마다 휴식·교통 여유 30분, 남해 안 이동마다 주차·승하차 여유 8분을 더해 5분 단위로 올렸습니다. 오전 산책 35분, 식사 60분, 카페 60분, 마지막 산책 25분으로 계산합니다.</p><p>' + externalLink(route.matrix.url, '도로거리·시간 원자료') + ' · ' + externalLink('https://www.openstreetmap.org/copyright', '© OpenStreetMap contributors') + '</p><p>사진마다 원문과 촬영자를 연결했습니다. 메뉴판·운영시간은 자료의 촬영·게시 시점에 따라 달라질 수 있어요. TMAP 버튼은 앱이 설치된 휴대폰에서 사용하는 연결입니다. 실제 휴대폰 앱 실행은 확인하지 못했습니다. 실내 좌석과 전망을 기준으로 카페를 골랐으며 온돌 좌석은 확인되지 않았습니다. 자료 확인 ' + escapeText(guide.checked) + '.</p><p>' + guide.credits.map(credit => externalLink(credit.url, escapeText(credit.label))).join(' · ') + '</p>';
+    $('sources').innerHTML = '<p>대구 출발·복귀 기준점은 서대구 IC입니다. 주행시간은 OpenStreetMap 도로망을 이용한 OSRM 자동차 경로 추정값이며 실시간 교통은 반영하지 않습니다. 사천 합류 기준점은 사남면 월성1길 89입니다. 주신 주소에 합류·복귀하는 것으로 가정했습니다. 기준점에 왕복으로 들러 각각 10분 정차하는 일정입니다. 장거리 구간마다 휴식·교통 여유 30분, 사천 안 이동마다 주차·승하차 여유 8분을 더해 5분 단위로 올렸습니다. 오전 관람은 A코스 45분·B코스 35분, 식사와 카페 각각 60분, 마지막 산책 25분입니다. 점심은 11:30 이후로 잡았습니다.</p><p>' + externalLink(route.matrix.url, '도로거리·시간 원자료') + ' · ' + externalLink('https://www.openstreetmap.org/copyright', '© OpenStreetMap contributors') + '</p><p>사진마다 원문과 촬영자를 연결했습니다. 메뉴판·운영시간은 자료의 촬영·게시 시점에 따라 달라질 수 있어요. TMAP 버튼은 앱이 설치된 휴대폰에서 사용하는 연결입니다. 실제 휴대폰 앱 실행은 확인하지 못했습니다. 실내 좌석과 전망을 기준으로 카페를 골랐으며 온돌 좌석은 확인되지 않았습니다. 자료 확인 ' + escapeText(guide.checked) + '.</p><p>' + guide.credits.map(credit => externalLink(credit.url, escapeText(credit.label))).join(' · ') + '</p>';
   }
   function draw() {
     const route = routes[key];
@@ -183,12 +184,12 @@
     routeHeader(route);
     if (isDetail) {
       drawDetail();
-      document.title = places.get(detailId).name + ' · 사진과 방문 안내 | 남해 하루여행';
+      document.title = places.get(detailId).name + ' · 사진과 방문 안내 | 사천 하루여행';
     } else {
-      document.title = '남해 하루여행 | 서대구 IC에서 떠나는 당일치기';
+      document.title = '사천 하루여행 | 서대구 IC에서 떠나는 당일치기';
       mapView?.destroy();
-      const longest = Math.max(...itinerary.legs.slice(1, 4).map(segment => segment.minutes));
-      $('panel').innerHTML = (tab === 'schedule' ? '<p class="navigationHint">주소를 복사하거나 TMAP 버튼으로 길찾기를 열 수 있어요. TMAP 앱이 설치된 휴대폰에서 이용해 주세요.</p><div class="summaryStrip"><span>' + icon('clock') + '서대구 IC 복귀 예상 <b>' + hour(itinerary.starts[5]) + '</b></span><span>' + icon('car') + '현지 최장 주행 <b>약 ' + longest + '분</b></span></div>' : '') + (tab === 'schedule' ? schedule(route, itinerary) : tab === 'map' ? mapShell('서대구 IC에서 남해까지 전체 경로', itinerary) : choices(route, itinerary, tab));
+      const longest = Math.max(...itinerary.legs.slice(1, -1).map(segment => segment.minutes));
+      $('panel').innerHTML = (tab === 'schedule' ? '<p class="navigationHint">주소를 복사하거나 TMAP 버튼으로 길찾기를 열 수 있어요. TMAP 앱이 설치된 휴대폰에서 이용해 주세요.</p><div class="summaryStrip"><span>' + icon('clock') + '서대구 IC 복귀 예상 <b>' + hour(itinerary.starts.at(-1)) + '</b></span><span>' + icon('car') + '현지 최장 주행 <b>약 ' + longest + '분</b></span></div>' : '') + (tab === 'schedule' ? schedule(route, itinerary) : tab === 'map' ? mapShell('서대구 IC에서 사천까지 전체 경로', itinerary) : choices(route, itinerary, tab));
       if ($('travelMap')) mapView = window.renderTravelMap($('travelMap'), {stops: itinerary.visits, restaurants: route.restaurants, cafes: route.cafes, origin: itinerary.visits[0], onOpen: place => openPlace(place.id), navigationUrl: tmapUrl, wide: tab === 'map'});
     }
     references(route);
@@ -244,7 +245,7 @@
       return;
     }
     if (control.dataset.copy) {
-      const place = places.get(control.dataset.copy) || guide.origin;
+      const place = places.get(control.dataset.copy) || (control.dataset.copy === 'anchor' ? guide.anchor : guide.origin);
       try {await navigator.clipboard.writeText(place.address); announce('주소를 복사했어요.');}
       catch {window.prompt('주소를 복사해 주세요.', place.address);}
       return;
